@@ -1,4 +1,4 @@
-// Matrix3d.cs
+﻿// Vector2f.cs
 //
 // Authors:
 //   Jerry Maine (crashfourit@gmail.com)

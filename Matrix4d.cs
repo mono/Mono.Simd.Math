@@ -1,9 +1,10 @@
 // Matrix4d.cs
 //
-// Author:
+// Authors:
 //   Jerry Maine (crashfourit@gmail.com)
+//   John Hurliman (john.hurliman@intel.com)
 //
-// (C) Jerry Maine
+// (C) Jerry Maine & Intel Corporation
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the

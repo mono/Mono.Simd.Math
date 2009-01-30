@@ -1,3 +1,12 @@
+2009-01-29 John Hurliman  <john.hurliman@gmail.com>
+
+	* Filled in initial implementations for Matrix4f, Quaternion4f, and
+	Vector4f helpers.
+
+	* Added Utils class, adapted from Mono.Xna's MathHelper.
+
+	* Added stub files for Vector2f and Vector2d.
+
 2009-01-25 Jerry Maine  <crashfourit.gmail.com>
 
 	* Initial file import. Released under MIT/X11 License.
