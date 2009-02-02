@@ -1,4 +1,4 @@
-// Matrix3d.cs
+// Matrix3fNoPadding.cs
 //
 // Authors:
 //   Jerry Maine (crashfourit@gmail.com)
@@ -24,9 +24,4 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-namespace Mono.Simd.Math {
-	
-	
-	
-}
+//

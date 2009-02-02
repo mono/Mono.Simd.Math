@@ -34,13 +34,13 @@ namespace Mono.Simd.Math {
     [StructLayout(LayoutKind.Explicit, Pack = 0, Size = 64)]
     public struct Matrix4f {
         [FieldOffset(0)]
-        private Vector4f R0;
+        internal Vector4f R0;
         [FieldOffset(16)]
-        private Vector4f R1;
+        internal Vector4f R1;
         [FieldOffset(32)]
-        private Vector4f R2;
+        internal Vector4f R2;
         [FieldOffset(48)]
-        private Vector4f R3;
+        internal Vector4f R3;
 
         #region Properties
 
@@ -212,7 +212,7 @@ namespace Mono.Simd.Math {
             R3 *= Vector4f.MinusOne;
         }
 
-        public Matrix4f Transform(ref Quaternionf rotation)
+        public Matrix4f Transform(Quaternionf rotation)
         {
             float x2 = rotation.X + rotation.X;
             float y2 = rotation.Y + rotation.Y;
@@ -253,11 +253,25 @@ namespace Mono.Simd.Math {
 
         public Matrix4f Transpose()
         {
-            return new Matrix4f(
-                new Vector4f(R0.X, R1.X, R2.X, R3.X),
-                new Vector4f(R0.Y, R1.Y, R2.Y, R3.Y),
-                new Vector4f(R0.Z, R1.Z, R2.Z, R3.Z),
-                new Vector4f(R0.W, R1.W, R2.W, R3.W));
+            Matrix4f m;
+			
+			Vector4f lowR0R2 = Vector4f.InterleaveLow(R0, R2);
+			Vector4f lowR1R3 = Vector4f.InterleaveLow(R1, R3);
+			
+			
+			m.R0 = Vector4f.InterleaveLow(lowR0R2, lowR1R3);
+			
+			m.R1 = Vector4f.InterleaveHigh(lowR0R2, lowR1R3);
+			
+			Vector4f highR0R2 = Vector4f.InterleaveHigh(R0, R2);
+			Vector4f highR1R3 = Vector4f.InterleaveHigh(R1, R3);
+			
+			
+			m.R2 = Vector4f.InterleaveLow(highR0R2, highR1R3);
+			
+			m.R3 = Vector4f.InterleaveHigh(highR0R2, highR1R3);
+			
+			return m;
         }
 
         public void FromAxisAngle(Vector3f axis, float angle)
@@ -659,6 +673,11 @@ namespace Mono.Simd.Math {
         }
 
         #endregion Operators
+		
+		#region Casts
+		
+		
+		#endregion Casts
 
         public static readonly Matrix4f Zero = new Matrix4f();
 

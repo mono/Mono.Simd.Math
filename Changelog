@@ -1,3 +1,11 @@
+2009-02-01 Jerry Maine  <crashfourit.gmail.com>
+	* Structs should be immutable (not completed) except for normalize. 
+ 
+	* Added Vector3fNoPadding.cs and Matrix3fNoPadding.cs. 
+	  The other structs will have padding to make the vector/rows fit easily into 16 byte incroments, even if it includes padding.
+
+	* Released under MIT/X11.
+
 2009-01-29 John Hurliman  <john.hurliman@gmail.com>
 
 	* Filled in initial implementations for Matrix4f, Quaternion4f, and

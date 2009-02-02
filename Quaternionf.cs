@@ -36,7 +36,7 @@ namespace Mono.Simd.Math
     public struct Quaternionf
     {
         [FieldOffset(0)]
-        public Vector4f Vector;
+        internal Vector4f Vector;
 
         #region Properties
 
@@ -69,13 +69,59 @@ namespace Mono.Simd.Math
             Vector = quaternion.Vector;
         }
 
+		/* FromRotationMatrix
+		 */
+		public void Quaternionf(Matrix4f m)
+        {
+            float trace = m.Trace();
+
+            if (trace > Single.Epsilon)
+            {
+                float s = (float)System.Math.Sqrt(trace + 1f);
+                Vector.W = s * 0.5f;
+                s = 0.5f / s;
+                Vector.X = (m.M23 - m.M32) * s;
+                Vector.Y = (m.M31 - m.M13) * s;
+                Vector.Z = (m.M12 - m.M21) * s;
+            }
+            else
+            {
+                if (m.M11 > m.M22 && m.M11 > m.M33)
+                {
+                    float s = (float)System.Math.Sqrt(1f + m.M11 - m.M22 - m.M33);
+                    Vector.X = 0.5f * s;
+                    s = 0.5f / s;
+                    Vector.Y = (m.M12 + m.M21) * s;
+                    Vector.Z = (m.M13 + m.M31) * s;
+                    Vector.W = (m.M23 - m.M32) * s;
+                }
+                else if (m.M22 > m.M33)
+                {
+                    float s = (float)System.Math.Sqrt(1f + m.M22 - m.M11 - m.M33);
+                    Vector.Y = 0.5f * s;
+                    s = 0.5f / s;
+                    Vector.X = (m.M21 + m.M12) * s;
+                    Vector.Z = (m.M32 + m.M23) * s;
+                    Vector.W = (m.M31 - m.M13) * s;
+                }
+                else
+                {
+                    float s = (float)System.Math.Sqrt(1f + m.M33 - m.M11 - m.M22);
+                    Vector.Z = 0.5f * s;
+                    s = 0.5f / s;
+                    Vector.X = (m.M31 + m.M13) * s;
+                    Vector.Y = (m.M32 + m.M23) * s;
+                    Vector.W = (m.M12 - m.M21) * s;
+                }
+            }
+        }
         #endregion Constructors
 
         #region Public Methods
 
-        public void Negate()
+        public Vector4f Negate()
         {
-            Vector *= Vector4f.MinusOne;
+            return Vector * Vector4f.MinusOne;
         }
 
         public void Normalize()
@@ -183,13 +229,13 @@ namespace Mono.Simd.Math
         /// <summary>
         /// Conjugates and renormalizes the quaternion
         /// </summary>
-        public void Invert()
+        public Vector4f Invert()
         {
             float norm = LengthSquared();
 
             if (norm == 0f)
             {
-                Vector = Vector4f.Zero;
+                return Vector4f.Zero;
             }
             else
             {
@@ -197,7 +243,7 @@ namespace Mono.Simd.Math
 
                 Vector4f r = new Vector4f(norm);
                 r = r.Reciprocal();
-                Vector *= r;
+                return Vector * r;
             }
         }
 
@@ -245,7 +291,104 @@ namespace Mono.Simd.Math
             Vector.W = (float)(atLeftCos * upCos - atLeftSin * upSin);
         }
 
-        public void FromRotationMatrix(Matrix4f m)
+        
+
+        public float Dot(Quaternionf quaternion)
+        {
+            return
+                (Vector.X * quaternion.Vector.X) +
+                (Vector.Y * quaternion.Vector.Y) +
+                (Vector.Z * quaternion.Vector.Z) +
+                (Vector.W * quaternion.Vector.W);
+        }
+
+        /// <summary>
+        /// Spherical linear interpolation between this quaternion and another
+        /// </summary>
+        /// <param name="quaternion"></param>
+        /// <param name="amount"></param>
+        public Quaternionf Slerp(Quaternionf quaternion, float amount)
+        {
+            float angle = Dot(quaternion);
+            Quaternionf q1 = this;
+
+            if (angle < 0f)
+            {
+                q1.Negate();
+                angle *= -1f;
+            }
+
+            float scale;
+            float invscale;
+
+            if ((angle + 1f) > 0.05f)
+            {
+                if ((1f - angle) >= 0.05f)
+                {
+                    // slerp
+                    float theta = (float)System.Math.Acos(angle);
+                    float invsintheta = 1f / (float)System.Math.Sin(theta);
+                    scale = (float)System.Math.Sin(theta * (1f - amount)) * invsintheta;
+                    invscale = (float)System.Math.Sin(theta * amount) * invsintheta;
+                }
+                else
+                {
+                    // lerp
+                    scale = 1f - amount;
+                    invscale = amount;
+                }
+            }
+            else
+            {
+                quaternion.X = -q1.Y;
+                quaternion.Y = q1.X;
+                quaternion.Z = -q1.W;
+                quaternion.W = q1.Z;
+
+                scale = (float)System.Math.Sin(Utils.Pi * (0.5f - amount));
+                invscale = (float)System.Math.Sin(Utils.Pi * amount);
+            }
+
+            return (q1 * scale) + (quaternion * invscale);
+        }
+
+        public bool ApproxEquals(Quaternionf quaternion, float tolerance)
+        {
+            Vector4f diff = Vector - quaternion.Vector;
+            return (diff.Length() <= tolerance);
+        }
+
+        public bool IsFinite()
+        {
+            return Utils.IsFinite(Vector.X) && Utils.IsFinite(Vector.Y) &&
+                Utils.IsFinite(Vector.Z) && Utils.IsFinite(Vector.W);
+        }
+
+        #endregion Public Methods
+
+        #region Overrides
+
+        public override int GetHashCode()
+        {
+            return Vector.X.GetHashCode() ^ Vector.Y.GetHashCode() ^
+                Vector.Z.GetHashCode() ^ Vector.W.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return "<" + X + ", " + Y + ", " + Z + ", " + W + ">";
+        }
+
+        #endregion Overrides
+
+        #region Operators
+
+        public static bool operator ==(Quaternionf value1, Quaternionf value2)
+        {
+            return value1.X == value2.X && value1.Y == value2.Y && value1.Z == value2.Z && value1.W == value2.W;
+        }
+
+        public static bool operator !=(Quaternionf value1, Quaternionf value2)public void FromRotationMatrix(Matrix4f m)
         {
             float trace = m.Trace();
 
@@ -289,103 +432,6 @@ namespace Mono.Simd.Math
                 }
             }
         }
-
-        public float Dot(Quaternionf quaternion)
-        {
-            return
-                (Vector.X * quaternion.Vector.X) +
-                (Vector.Y * quaternion.Vector.Y) +
-                (Vector.Z * quaternion.Vector.Z) +
-                (Vector.W * quaternion.Vector.W);
-        }
-
-        /// <summary>
-        /// Spherical linear interpolation between this quaternion and another
-        /// </summary>
-        /// <param name="quaternion"></param>
-        /// <param name="amount"></param>
-        public void Slerp(Quaternionf quaternion, float amount)
-        {
-            float angle = Dot(quaternion);
-            Quaternionf q1 = this;
-
-            if (angle < 0f)
-            {
-                q1.Negate();
-                angle *= -1f;
-            }
-
-            float scale;
-            float invscale;
-
-            if ((angle + 1f) > 0.05f)
-            {
-                if ((1f - angle) >= 0.05f)
-                {
-                    // slerp
-                    float theta = (float)System.Math.Acos(angle);
-                    float invsintheta = 1f / (float)System.Math.Sin(theta);
-                    scale = (float)System.Math.Sin(theta * (1f - amount)) * invsintheta;
-                    invscale = (float)System.Math.Sin(theta * amount) * invsintheta;
-                }
-                else
-                {
-                    // lerp
-                    scale = 1f - amount;
-                    invscale = amount;
-                }
-            }
-            else
-            {
-                quaternion.X = -q1.Y;
-                quaternion.Y = q1.X;
-                quaternion.Z = -q1.W;
-                quaternion.W = q1.Z;
-
-                scale = (float)System.Math.Sin(Utils.Pi * (0.5f - amount));
-                invscale = (float)System.Math.Sin(Utils.Pi * amount);
-            }
-
-            this = (q1 * scale) + (quaternion * invscale);
-        }
-
-        public bool ApproxEquals(Quaternionf quaternion, float tolerance)
-        {
-            Vector4f diff = Vector - quaternion.Vector;
-            return (diff.Length() <= tolerance);
-        }
-
-        public bool IsFinite()
-        {
-            return Utils.IsFinite(Vector.X) && Utils.IsFinite(Vector.Y) &&
-                Utils.IsFinite(Vector.Z) && Utils.IsFinite(Vector.W);
-        }
-
-        #endregion Public Methods
-
-        #region Overrides
-
-        public override int GetHashCode()
-        {
-            return Vector.X.GetHashCode() ^ Vector.Y.GetHashCode() ^
-                Vector.Z.GetHashCode() ^ Vector.W.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return "<" + X + ", " + Y + ", " + Z + ", " + W + ">";
-        }
-
-        #endregion Overrides
-
-        #region Operators
-
-        public static bool operator ==(Quaternionf value1, Quaternionf value2)
-        {
-            return value1.X == value2.X && value1.Y == value2.Y && value1.Z == value2.Z && value1.W == value2.W;
-        }
-
-        public static bool operator !=(Quaternionf value1, Quaternionf value2)
         {
             return value1.X != value2.X || value1.Y != value2.Y || value1.Z != value2.Z || value1.W != value2.W;
         }
@@ -401,8 +447,7 @@ namespace Mono.Simd.Math
 
         public static Quaternionf operator -(Quaternionf value)
         {
-            value.Negate();
-            return value;
+            return value.Negate();
         }
 
         public static Quaternionf operator -(Quaternionf value1, Quaternionf value2)

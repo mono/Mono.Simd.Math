@@ -26,11 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-using System;
+using Mono.Simd;
 
-namespace Mono.Simd.Math
-{
-    public static class Vector4fExtensions
+namespace Mono.Simd.Math {
+	
+	public static class Vector4fExtensions
     {
         public static void Negate(this Vector4f vec)
         {
@@ -71,5 +71,7 @@ namespace Mono.Simd.Math
         {
             return (Utils.IsFinite(vec.X) && Utils.IsFinite(vec.Y) && Utils.IsFinite(vec.Z) && Utils.IsFinite(vec.W));
         }
+		
+		
     }
 }
